@@ -9,7 +9,7 @@ struct EvalTest: public testing::Test {};
 
 void random_vector(std::vector<double> &v, int size) {
 
-    std::normal_distribution<double> distribution(0.0, 2.0);
+    std::normal_distribution<double> distribution(0.0, 10.0);
 
     v.clear();
     v.resize(size);
@@ -21,7 +21,7 @@ void random_vector(std::vector<double> &v, int size) {
 
 TEST(EvalTest, MatMul_2PC_Profiling) {
 
-    if (partyNum >= 2) return;
+    // if (partyNum >= 2) return;
 
     std::vector<double> rnd_vals;
 
@@ -46,8 +46,8 @@ TEST(EvalTest, MatMul_2PC_Profiling) {
         matmul(a, b, c, n, n, n, false, false, false, (uint64_t)FLOAT_PRECISION);
 
         profiler.accumulate("matmul");
-
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // printf("I am here\n");
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("2PC - matmul (N=%d) - %f sec.\n", n, profiler.get_elapsed("matmul") / 1000.0);
     }
 }
@@ -80,7 +80,7 @@ TEST(EvalTest, MatMul_3PC_Profiling) {
 
         profiler.accumulate("matmul");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("3PC - matmul (N=%d) - %f sec.\n", n, profiler.get_elapsed("matmul") / 1000.0);
     }
 }
@@ -113,14 +113,14 @@ TEST(EvalTest, MatMul_4PC_Profiling) {
 
         profiler.accumulate("matmul");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("4PC - matmul (N=%d) - %f sec.\n", n, profiler.get_elapsed("matmul") / 1000.0);
     }
 }
 
 TEST(EvalTest, Conv_2PC_Profiling) {
 
-    if (partyNum >= 2) return;
+    // if (partyNum >= 2) return;
 
     std::vector<double> rnd_vals;
 
@@ -163,7 +163,7 @@ TEST(EvalTest, Conv_2PC_Profiling) {
 
         profiler.accumulate("conv");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("2PC - conv (N=1, Iw/h=%d, Din=%d, Dout=%d, f=%d) - %f sec.\n", im_size, din, dout, f_size, profiler.get_elapsed("conv") / 1000.0);
     }
 }
@@ -213,7 +213,7 @@ TEST(EvalTest, Conv_3PC_Profiling) {
 
         profiler.accumulate("conv");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("3PC - conv (N=1, Iw/h=%d, Din=%d, Dout=%d, f=%d) - %f sec.\n", im_size, din, dout, f_size, profiler.get_elapsed("conv") / 1000.0);
     }
 }
@@ -263,18 +263,18 @@ TEST(EvalTest, Conv_4PC_Profiling) {
 
         profiler.accumulate("conv");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("4PC - conv (N=1, Iw/h=%d, Din=%d, Dout=%d, f=%d) - %f sec.\n", im_size, din, dout, f_size, profiler.get_elapsed("conv") / 1000.0);
     }
 }
 
 TEST(EvalTest, ReLU_2PC_Profiling) {
 
-    if (partyNum >= 2) return;
+    // if (partyNum >= 2) return;
 
     std::vector<double> rnd_vals;
 
-    std::vector<int> N = {1, 10, 100, 1000, 10000, 100000};
+    std::vector<int> N = {32, 512, 8192, 16384};
     for (int i = 0; i < N.size(); i++) {
 
         int n = N[i];
@@ -293,7 +293,7 @@ TEST(EvalTest, ReLU_2PC_Profiling) {
 
         profiler.accumulate("relu");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("2PC - relu (N=%d) - %f sec.\n", n, profiler.get_elapsed("relu") / 1000.0);
     }
 }
@@ -323,7 +323,7 @@ TEST(EvalTest, ReLU_3PC_Profiling) {
 
         profiler.accumulate("relu");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("3PC - relu (N=%d) - %f sec.\n", n, profiler.get_elapsed("relu") / 1000.0);
     }
 }
@@ -353,14 +353,14 @@ TEST(EvalTest, ReLU_4PC_Profiling) {
 
         profiler.accumulate("relu");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("4PC - relu (N=%d) - %f sec.\n", n, profiler.get_elapsed("relu") / 1000.0);
     }
 }
 
 TEST(EvalTest, Delphi_Convolutions) {
 
-    if (partyNum >= 2) return;
+    // if (partyNum >= 2) return;
 
     std::vector<double> rnd_vals;
 
@@ -404,7 +404,7 @@ TEST(EvalTest, Delphi_Convolutions) {
 
         profiler.accumulate("conv");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("2PC - conv (N=1, Iw/h=%d, Din=%d, Dout=%d, f=%d) - %f sec.\n", im_size, din, dout, f_size, profiler.get_elapsed("conv") / 1000.0);
     	printf("TX comm (MB),%f\n", comm_profiler.get_comm_tx_bytes() / 1024.0 / 1024.0);
     	printf("RX comm (MB),%f\n", comm_profiler.get_comm_rx_bytes() / 1024.0 / 1024.0);
@@ -413,7 +413,7 @@ TEST(EvalTest, Delphi_Convolutions) {
 
 TEST(EvalTest, GForce_Relu) {
 
-    if (partyNum >= 2) return;
+    // if (partyNum >= 2) return;
 
     std::vector<double> rnd_vals;
 
@@ -438,11 +438,134 @@ TEST(EvalTest, GForce_Relu) {
 
         profiler.accumulate("relu");
 
-        if (i == 0) continue; // sacrifice run to spin up GPU
+        // if (i == 0) continue; // sacrifice run to spin up GPU
         printf("2PC - relu (N=%d) - %f sec.\n", n, profiler.get_elapsed("relu") / 1000.0);
     	printf("TX comm (MB),%f\n", comm_profiler.get_comm_tx_bytes() / 1024.0 / 1024.0);
     	printf("RX comm (MB),%f\n", comm_profiler.get_comm_rx_bytes() / 1024.0 / 1024.0);
     }
 }
 
+TEST(EvalTest, Sum_2PC_Profiling) {
 
+    // if (partyNum >= 2) return;
+
+    std::vector<double> rnd_vals;
+
+    std::vector<int> N = {32, 512, 8192, 16384};
+    for (int i = 0; i < N.size(); i++) {
+
+        int n = N[i];
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> a(n);
+        a.setPublic(rnd_vals);
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> b(n);
+        b.setPublic(rnd_vals);
+
+        TPC<uint64_t> c(n);
+        TPC<uint64_t> result(1);
+
+        Profiler profiler;
+        profiler.start();
+
+        sum_and_reduce(a, b, c, result);
+
+        profiler.accumulate("sum");
+
+        // if (i == 0) continue; // sacrifice run to spin up GPU
+        printf("2PC - sum (N=%d) - %f sec.\n", n, profiler.get_elapsed("sum") / 1000.0);
+    }
+}
+
+
+TEST(EvalTest, Count_2PC_Profiling) {
+
+    // if (partyNum >= 2) return;
+
+    std::vector<double> rnd_vals;
+
+    std::vector<int> N = {32, 512, 8192, 16384};
+    uint64_t t = 5; // Threshold value set to 5 for testing
+
+    for (int i = 0; i < N.size(); i++) {
+
+        int n = N[i];
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> a(n);
+        a.setPublic(rnd_vals);
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> b(n);
+        b.setPublic(rnd_vals);
+
+        TPC<uint64_t> result(1);  // To store the count result
+
+        Profiler profiler;
+        profiler.start();
+
+        count_gt(a, b, result);
+
+        profiler.accumulate("count");
+
+        // if (i == 0) continue; // sacrifice run to spin up GPU
+        printf("2PC - count (N=%d) - %f sec.\n", n, profiler.get_elapsed("count") / 1000.0);
+    }
+}
+
+TEST(EvalTest, Billionaire_2PC_Profiling) {
+    std::vector<double> rnd_vals;
+
+    std::vector<int> N = {32, 512, 8192, 16384};
+
+    for (int i = 0; i < N.size(); i++) {
+
+        int n = N[i];
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> a_cash(n);
+        a_cash.setPublic(rnd_vals);
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> a_property(n);
+        a_property.setPublic(rnd_vals);
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> a_stock(n);
+        a_stock.setPublic(rnd_vals);
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> b_cash(n);
+        b_cash.setPublic(rnd_vals);
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> b_property(n);
+        b_property.setPublic(rnd_vals);
+
+        random_vector(rnd_vals, n);
+        TPC<uint64_t> b_stock(n);
+        b_stock.setPublic(rnd_vals);
+
+        TPC<uint64_t> result(1);  // To store the count result
+
+        Profiler profiler;
+        profiler.start();
+
+    // call billionaire: counts how many indices where a_total > b_total
+    billionaire(a_cash, a_property, a_stock, b_cash, b_property, b_stock, result);
+
+    // Optionally reconstruct and print the count on the host for the test
+    DeviceData<uint64_t> outVal(1);
+    reconstruct(result, outVal);
+    std::vector<uint64_t> host_out(1);
+    thrust::copy(outVal.begin(), outVal.end(), host_out.begin());
+    printf("billionaire count = %llu\n", (unsigned long long)host_out[0]);
+
+        profiler.accumulate("count");
+
+        // if (i == 0) continue; // sacrifice run to spin up GPU
+        printf("2PC - billionaire (N=%d) - %f sec.\n", n, profiler.get_elapsed("count") / 1000.0);
+    }
+}

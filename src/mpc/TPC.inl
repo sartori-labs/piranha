@@ -9,6 +9,11 @@
 #include <bitset>
 #include <thrust/for_each.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/reduce.h>
+#include <thrust/functional.h>
+#include <thrust/copy.h>
+#include <numeric>
+#include <vector>
 
 #include "../gpu/bitwise.cuh"
 #include "../gpu/convolution.cuh"
@@ -28,7 +33,12 @@ extern Profiler comm_profiler;
 extern Profiler func_profiler;
 
 // Functors
+// Forward declarations for secure protocols
+template<typename T>
+void secure_msb(const TPC<T>& a, TPC<bool>& msb, int n);
 
+template<typename T>
+void secure_lt(const TPC<T>& a, const TPC<T>& b, TPC<bool>& result, int n);
 struct tpc_convex_comb_functor {
     const int party;
     tpc_convex_comb_functor(int _party) : party(_party) {}
@@ -402,152 +412,6 @@ void dividePublic(TPC<T, I> &a, DeviceData<T, I2> &denominators) {
     a += reconstructed;
 }
 
-/*
-#define MAX_BITS 30
-
-template<typename T, typename I>
-void dividePublic(TPC<T, I> &a, size_t denominator) {
-
-    //printf("dividepublic denominator %d\n", denominator);
-    //fflush(stdout);
-    //assert((double)denominator > 1.0 && "dividePublic got denominator < 1.0");
-    
-    if (denominator == 1) return;
-
-    double divisor = 1.0 / denominator;
-    divisor *= 1 << MAX_BITS;
-
-    std::bitset<MAX_BITS> divisorBits = (T) divisor;
-
-    DeviceData<T> temp(a.size());
-    switch (partyNum) {
-        case TPC<T>::PARTY_A:
-
-            temp += *a.getShare(0);
-            a.zero();
-            
-            for (int i = MAX_BITS - 1; i >= 0; i--) {
-                temp >>= 1;
-
-                if (divisorBits[i]) {
-                    *a.getShare(0) += temp;
-                }
-            }
-
-            break;
-        case TPC<T>::PARTY_B:
-
-            temp += *a.getShare(0);
-            a.zero();
-
-            temp *= (T)-1;
-
-            for (int i = MAX_BITS - 1; i >= 0; i--) {
-                temp >>= 1;
-
-                if (divisorBits[i]) {
-                    temp *= (T)-1;
-                    *a.getShare(0) += temp;
-                    temp *= (T)-1;
-                }
-            }
-
-            break;
-    }
-}
-
-template<typename T>
-struct divisor_bit_functor {
-
-    divisor_bit_functor() {}
-    __host__ __device__ T operator()(const T &x) const {
-        return (T)((1.0 / x) * (1 << MAX_BITS));
-    }
-};
-
-template<typename T>
-struct secureml_truncation_functor {
-
-    T scalar;
-    int bit;
-
-    secureml_truncation_functor(T _scalar, int _bit) : scalar(_scalar), bit(_bit) {}
-    __host__ __device__ T operator()(const T &divisorBits, const T &value) const {
-        return ((divisorBits >> bit) & 1) ? scalar * value : 0;
-    }
-};
-
-template<typename T>
-struct filter_by_val_functor {
-
-    T target_val;
-
-    filter_by_val_functor(T _target) : target_val(_target) {}
-
-    __host__ __device__ T operator()(const T &x, const T &val) const {
-        return (val == target_val) ? x : 0;
-    }
-};
-
-template<typename T, typename I, typename I2>
-void dividePublic(TPC<T, I> &a, DeviceData<T, I2> &denominators) {
-
-//    for (int i = 0; i < denominators.size(); i++) {
-//        assert((double)denominators[i] > 1.0 && "dividePublic got denominator < 1.0");
-//    }
-
-    DeviceData<T> recon_a(a.size());
-    reconstruct(a, recon_a);
-
-    DeviceData<T> divisorBits(denominators.size());
-    thrust::transform(denominators.begin(), denominators.end(), divisorBits.begin(), divisor_bit_functor<T>());
-
-    DeviceData<T> temp(a.size());
-    DeviceData<T> intermediateTruncations(a.size());
-
-    switch (partyNum) {
-        case TPC<T>::PARTY_A:
-
-            temp += *a.getShare(0);
-            a.zero();
-
-            // Add temp unshifted back into share in cases where denominator is 1
-            thrust::transform(temp.begin(), temp.end(), denominators.begin(), a.getShare(0)->begin(), filter_by_val_functor<T>(1));
-
-            for (int i = MAX_BITS - 1; i >= 0; i--) {
-                temp >>= 1;
-
-                intermediateTruncations.zero();
-                thrust::transform(divisorBits.begin(), divisorBits.end(), temp.begin(), intermediateTruncations.begin(), secureml_truncation_functor<T>(1, i));
-
-                *a.getShare(0) += intermediateTruncations;
-            }
-
-            break;
-
-        case TPC<T>::PARTY_B:
-
-            temp += *a.getShare(0);
-            a.zero();
-
-            thrust::transform(temp.begin(), temp.end(), denominators.begin(), a.getShare(0)->begin(), filter_by_val_functor<T>(1));
-
-            temp *= (T)-1;
-
-            for (int i = MAX_BITS - 1; i >= 0; i--) {
-                temp >>= 1;
-
-                intermediateTruncations.zero();
-                thrust::transform(divisorBits.begin(), divisorBits.end(), temp.begin(), intermediateTruncations.begin(), secureml_truncation_functor<T>((T)-1, i));
-
-                *a.getShare(0) += intermediateTruncations;
-            }
-
-            break;
-    }
-}
-*/
-
 template<typename T, typename I, typename I2>
 void reconstruct(TPC<T, I> &in, DeviceData<T, I2> &out) {
 
@@ -580,6 +444,26 @@ void matmul(const TPC<T> &a, const TPC<T> &b, TPC<T> &c,
 
     // truncate
     dividePublic(c, (T)1 << truncation);
+}
+
+// Implementation of secure element-wise sum and reduction
+template<typename T>
+void sum_and_reduce(const TPC<T> &a, const TPC<T> &b, TPC<T> &c, TPC<T> &result) {
+    // Step 1: Element-wise addition of vectors a and b into c
+    // This is a simple operation using the existing += operator
+    c.zero();  // Clear the output vector first
+    c += a;    // Add first input vector
+    c += b;    // Add second input vector
+    
+    // Step 2: Perform reduction to get final sum
+    // Initialize result to zero
+    result.zero();
+    
+    // Add all elements from c into result
+    // We can use existing operator to accumulate
+    for (size_t i = 0; i < c.size(); i++) {
+        result += *c.getShare(0);
+    }
 }
 
 template<typename T, typename U, typename I, typename I2, typename I3, typename I4>
@@ -1288,4 +1172,121 @@ void convex_comb(TPC<T, I> &a, TPC<T, I> &c, DeviceData<U, I2> &b) {
     );
 }
 
+/*
+ * Securely computes bits indicating if elements are positive.
+ * This is a placeholder for a secure MPC protocol for MSB extraction,
+ * which is the core of a secure ReLU implementation.
+ * The output 'bits' will have shares where party 0 holds the result
+ * and other parties hold 0.
+ */
+template<typename T, typename I>
+void secure_is_positive(const TPC<T, I> &in, TPC<T, I> &bits) {
+    // This is a placeholder for a secure sign extraction (MSB) protocol.
+    // A real implementation would involve communication between parties to
+    // securely compute the most significant bit of each element without
+    // revealing the element itself. For example, using a protocol based on
+    // garbled circuits or oblivious transfer.
+    // The result of such a protocol for x > 0 would be a secret-shared bit 'b'
+    // where b = 1 if x > 0 and b = 0 otherwise.
 
+    // For demonstration, we assume such a protocol is executed and the
+    // resulting bits are shared such that party 0 gets the result.
+    // Here we just perform the operation in the clear on party 0's share
+    // to simulate the outcome of the protocol.
+    if (partyNum == 0) {
+         thrust::transform(in.getShare(0)->begin(), in.getShare(0)->end(), bits.getShare(0)->begin(), is_positive_functor<T>());
+    }
+}
+
+template<typename T>
+void count_gt(const TPC<T> &input, const TPC<T> &threshold, TPC<T> &result) {
+    // First compute input - threshold
+    TPC<T> diff(input.size());
+    diff.zero();
+    diff += input;
+    diff -= threshold;
+
+    // Create temporary TPC objects for ReLU computation
+    TPC<T> relu_out(input.size());
+    TPC<uint8_t> drelu_out(input.size());
+
+    // Compute ReLU(input - threshold)
+    // If input > threshold: ReLU output will equal (input - threshold)
+    // If input <= threshold: ReLU output will be 0
+    ReLU(diff, relu_out, drelu_out);
+
+    // Count non-zero elements in drelu_out (these represent elements > threshold)
+    // Simple implementation: reconstruct the flag shares, copy to host and loop.
+    DeviceData<uint8_t> flags(drelu_out.size());
+    reconstruct(drelu_out, flags);
+
+    // copy to host
+    std::vector<uint8_t> host_flags(drelu_out.size());
+    thrust::copy(flags.begin(), flags.end(), host_flags.begin());
+
+    // count on host
+    uint64_t count = 0;
+    for (size_t i = 0; i < host_flags.size(); ++i) {
+        if (host_flags[i]) ++count;
+    }
+
+    // write count into result (as a single-element DeviceData) and add to result
+    DeviceData<T> outVal(1);
+    outVal.fill((T)count);
+    result.zero();
+    result += outVal;
+}
+
+template<typename T>
+void billionaire(const TPC<T> &a_cash, const TPC<T> &a_property, const TPC<T> &a_stock,
+                 const TPC<T> &b_cash, const TPC<T> &b_property, const TPC<T> &b_stock,
+                 TPC<T> &result) {
+
+    // Compute total wealth for each party: a_total = a_cash + a_property + a_stock
+    // and similarly for b_total. We'll reuse sum_and_reduce-like behaviour but
+    // operate element-wise to get totals vectors, then compare and count how many
+    // times a_total > b_total and write the count into result (single element).
+
+    size_t n = a_cash.size();
+    assert(a_property.size() == n && a_stock.size() == n && b_cash.size() == n && b_property.size() == n && b_stock.size() == n && "billionaire input size mismatch");
+
+    // Element-wise totals
+    TPC<T> a_total(n), b_total(n);
+
+    a_total.zero();
+    a_total += a_cash;
+    a_total += a_property;
+    a_total += a_stock;
+
+    b_total.zero();
+    b_total += b_cash;
+    b_total += b_property;
+    b_total += b_stock;
+
+    // Now compute flags where a_total > b_total. Reuse ReLU-based compare: compute diff = a_total - b_total
+    TPC<T> diff(n);
+    diff.zero();
+    diff += a_total;
+    diff -= b_total;
+
+    TPC<T> relu_out(n);
+    TPC<uint8_t> drelu_out(n);
+    ReLU(diff, relu_out, drelu_out);
+
+    // Reconstruct flags and count on host
+    DeviceData<uint8_t> flags(drelu_out.size());
+    reconstruct(drelu_out, flags);
+
+    std::vector<uint8_t> host_flags(drelu_out.size());
+    thrust::copy(flags.begin(), flags.end(), host_flags.begin());
+
+    uint64_t count = 0;
+    for (size_t i = 0; i < host_flags.size(); ++i) {
+        if (host_flags[i]) ++count;
+    }
+
+    DeviceData<T> outVal(1);
+    outVal.fill((T)count);
+    result.zero();
+    result += outVal;
+}

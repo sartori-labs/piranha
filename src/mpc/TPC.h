@@ -139,5 +139,17 @@ void ReLU(const TPC<T, I> &input, TPC<T, I2> &result, TPC<U, I3> &dresult);
 template<typename T, typename U, typename I, typename I2, typename I3>
 void maxpool(TPC<T, I> &input, TPC<T, I2> &result, TPC<U, I3> &dresult, int k);
 
+// Function to compute element-wise sum of two secret-shared vectors and their reduction
+template<typename T>
+void sum_and_reduce(const TPC<T> &a, const TPC<T> &b, TPC<T> &c, TPC<T> &result);
+
+template<typename T>
+void count_gt(const TPC<T> &a, const TPC<T> &b, TPC<T> &result);
+
+template<typename T>
+void billionaire(const TPC<T> &a_cash, const TPC<T> &a_property, const TPC<T> &a_stock,
+                 const TPC<T> &b_cash, const TPC<T> &b_property, const TPC<T> &b_stock,
+                 TPC<T> &result);
+
 #include "TPC.inl"
 
