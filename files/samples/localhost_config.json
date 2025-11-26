@@ -9,13 +9,13 @@
     "party_users": [],
 
     "_desc_run_unit_tests": "Run unit tests",
-    "run_unit_tests": false,
+    "run_unit_tests": true,
 
     "_desc_unit_test_only": "Only run unit tests, do not try to run any full Piranha applications",
-    "unit_test_only": false,
+    "unit_test_only": true,
 
     "_desc_debug_print": "Show debug output",
-    "debug_print": false,
+    "debug_print": true,
 
     "_desc_debug_overflow": "Test for overflow and print related debug output. Breaks security by revealing intermediary values.",
     "debug_overflow": false,
@@ -27,13 +27,13 @@
     "run_name": "piranha_localhost",
 
     "_desc_network": "Path to NN architecture to use for the run",
-    "network": "files/models/secureml-norelu.json",
+    "network": "",
 
     "_desc_custom_epochs": "Enable custom number of epochs. Otherwise set by size of learning rate schedule",
-    "custom_epochs": true,
+    "custom_epochs": false,
 
     "_desc_custom_epoch_count": "Number of epochs to train for, if custom_epochs is set",
-    "custom_epoch_count": 10,
+    "custom_epoch_count": 0,
 
     "_desc_custom_iterations": "Enable custom number of iterations. Otherwise set by training dataset size.",
     "custom_iterations": false,
@@ -42,10 +42,10 @@
     "custom_iteration_count": 0,
 
     "_desc_custom_batch_size": "Enable custom batch size. Otherwise set by architecture configuration.",
-    "custom_batch_size": true,
+    "custom_batch_size": false,
 
     "_desc_custom_batch_size_count": "Desired custom batch size",
-    "custom_batch_size_count": 256,
+    "custom_batch_size_count": 0,
 
     "_desc_nn_seed": "Seed for NN initialization",
     "nn_seed": 343934585,
@@ -69,7 +69,7 @@
     "no_test": false,
 
     "_desc_last_test": "Only run a test pass after the last training epoch",
-    "last_test": true,
+    "last_test": false,
 
     "_desc_iteration_snapshots": "Take snapshots at each training iteration",
     "iteration_snapshots": false,
@@ -81,7 +81,7 @@
     "epoch_snapshots": false,
 
     "_desc_eval_accuracy": "Evaluation: print training/test accuracy",
-    "eval_accuracy": true,
+    "eval_accuracy": false,
 
     "_desc_eval_inference_stats": "Evaluation: print runtime and communication statistics for each inference forward pass",
     "eval_inference_stats": false,
@@ -96,7 +96,7 @@
     "eval_bw_peak_memory": false,
     
     "_desc_eval_epoch_stats": "Evaluation: print cumulative runtime and communication statistics for each training epoch",
-    "eval_epoch_stats": true,
+    "eval_epoch_stats": false,
 
     "_desc_print_activations": "Print output activations for each layer every forward pass",
     "print_activations": false,
