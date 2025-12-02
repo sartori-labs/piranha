@@ -22,10 +22,10 @@ srun -p msigpu --gres=gpu:v100:1 --time=00:30:00 --pty bash -i
 cmake .. -DCUTLASS_NVCC_ARCHS=80 -DCMAKE_CUDA_COMPILER_WORKS=1 -DCMAKE_CUDA_COMPILER=/common/software/install/manual/cuda/12.0/bin/nvcc
 
 # Compile with 2PC and float precision
-make PIRANHA_FLAGS="-DFLOAT_PRECISION=4 -DTWOPC"
-make PIRANHA_FLAGS="-DTWOPC"
+# make PIRANHA_FLAGS="-DFLOAT_PRECISION=4 -DTWOPC"
+make -j PIRANHA_FLAGS="-DTWOPC"
 
-./piranha-debug -p 0 -c files/samples/localhost_config.json --gtest_filter=EvalTest*2PC* >/dev/null 2>&1 &
+./piranha-debug -p 0 -c files/samples/localhost_config.json "--gtest_filter=EvalTest*2PC*" >/dev/null 2>&1 &
 # CUDA_VISIBLE_DEVICES=2 ./piranha -p 2 -c files/samples/localhost_config.json >/dev/null &
-./piranha-debug -p 1 -c files/samples/localhost_config.json --gtest_filter=EvalTest*2PC*
+./piranha-debug -p 1 -c files/samples/localhost_config.json "--gtest_filter=EvalTest*2PC*"
 

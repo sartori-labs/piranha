@@ -28,6 +28,10 @@ git submodule update --init --recursive
 
 1. Build CUTLASS
 
+Refer this [NVIDIA CUTLASS Documentation - Building for multipe Architectures](https://docs.nvidia.com/cutlass/media/docs/cpp/quickstart.html#building-for-multiple-architectures) for the GPU attached.
+
+
+
 ```
 cd ext/cutlass
 mkdir build
@@ -35,17 +39,38 @@ cmake .. -DCUTLASS_NVCC_ARCHS=<YOUR_GPU_ARCH_HERE> -DCMAKE_CUDA_COMPILER_WORKS=1
 make -j
 ```
 
+For buttonbox -> we have the GeForce GTX TITAN X with the following specs
+- Maxwell 2.0 Architecture
+- DirectX 12 (12_1)
+- OpenGL 4.6
+- OpenCL 3.0
+- Vulkan 1.4
+- CUDA 5.2
+- Shader Model 6.8
+
+Hence, we have to use
+
+```
+cmake .. -DCUTLASS_NVCC_ARCHS="50;53" -DCMAKE_CUDA_COMPILER_WORKS=1 -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.3/bin/nvcc
+```
+
+
 1. Install GTest. We use it for unit testing.
 
 ```
-sudo apt install libgtest-dev libssl-dev
-cd /usr/src/gtest
-sudo mkdir build
+cd ext/googletest
+mkdir build
 cd build
-sudo cmake ..
-sudo make
-sudo make install
+cmake .. -DCMAKE_INSTALL_PREFIX=../
+make
+make install
 ```
+Do not forget to export the library to `LD_LIBRARY_PATH`,
+
+```
+export LD_LIBRARY_PATH=<path_to_googletest>/lib64:$LD_LIBRARY_PATH
+```
+replace `<path_to_googletest>` with the actual path
 
 2. Create some necessary directories
 
