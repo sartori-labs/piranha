@@ -22,8 +22,8 @@ DEBUG_OBJ_FILES   += $(addprefix $(DEBUG_DIR)/, $(notdir $(SRC_CU_FILES:.cu=.o))
 HEADER_FILES      := $(wildcard src/*.h src/**/*.h src/*.cuh src/**/*.cuh src/*.inl src/**/*.inl)
 
 LIBS := -lcrypto -lssl -lcudart -lcuda -lgtest -lcublas
-OBJ_INCLUDES := -I '/usr/local/cuda-$(CUDA_VERSION)/include' -I '$(CUTLASS_PATH)/include' -I '$(CUTLASS_PATH)/tools/util/include' -I 'include' -I '$(PWD)/ext/googletest/googletest/include'
-INCLUDES := $(OBJ_INCLUDES), -L./ -L/usr/local/cuda-$(CUDA_VERSION)/lib64 -L$(CUTLASS_PATH)/build/tools/library -L$(PWD)/ext/googletest/lib64
+OBJ_INCLUDES := -I '/usr/local/cuda-$(CUDA_VERSION)/include' -I '$(CUTLASS_PATH)/include' -I '$(CUTLASS_PATH)/tools/util/include' -I 'include' -I '$(GOOGLETEST)/include'
+INCLUDES := $(OBJ_INCLUDES), -L./ -L/usr/local/cuda-$(CUDA_VERSION)/lib64 -L$(CUTLASS_PATH)/build/tools/library -L$(GOOGLETEST)/lib64
 
 TEST := EvalTest.*
 

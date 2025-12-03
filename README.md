@@ -17,7 +17,19 @@ Piranha is described in more detail in our [USENIX Security '22 paper](https://e
 
 **Warning**: This is an academic proof-of-concept prototype and has not received careful code review. This implementation is NOT ready for production use.
 
-## Build
+#### Setup the `env` variables
+
+The following things needs to be setup 
+- paths for the Google Test libraries and headers
+- GCC 12.2.0
+- CUDA 12.3
+- CMake 3.9
+
+The follwing command will take care of these things
+```
+source ./scripts/piranha_setup.sh
+```
+#### Build CUTLASS
 
 This project requires an NVIDIA GPU, and assumes you have your GPU drivers and the [NVIDIA CUDA Toolkit](https://docs.nvidia.com/cuda/) already installed. The following has been tested on AWS with the `Deep Learning Base AMI (Ubuntu 18.04 ) Version 53.5` AMI.
 
@@ -34,7 +46,7 @@ Refer this [NVIDIA CUTLASS Documentation - Building for multipe Architectures](h
 
 ```
 cd ext/cutlass
-mkdir build
+mkdir build; cd build
 cmake .. -DCUTLASS_NVCC_ARCHS=<YOUR_GPU_ARCH_HERE> -DCMAKE_CUDA_COMPILER_WORKS=1 -DCMAKE_CUDA_COMPILER=<YOUR NVCC PATH HERE>
 make -j
 ```
@@ -55,30 +67,14 @@ cmake .. -DCUTLASS_NVCC_ARCHS="50;53" -DCMAKE_CUDA_COMPILER_WORKS=1 -DCMAKE_CUDA
 ```
 
 
-1. Install GTest. We use it for unit testing.
-
-```
-cd ext/googletest
-mkdir build
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=../
-make
-make install
-```
-Do not forget to export the library to `LD_LIBRARY_PATH`,
-
-```
-export LD_LIBRARY_PATH=<path_to_googletest>/lib64:$LD_LIBRARY_PATH
-```
-replace `<path_to_googletest>` with the actual path
-
-2. Create some necessary directories
+#### Download Datasets (optional)
+1. Create some necessary directories
 
 ```
 mkdir output; mkdir files/MNIST; mkdir files/CIFAR10
 ```
 
-3. Download the MNIST/CIFAR10 datasets, if using. This step might take a while
+2. Download the MNIST/CIFAR10 datasets, if using. This step might take a while
 
 ```
 cd scripts
@@ -86,10 +82,17 @@ sudo pip install torch torchvision
 python download_{mnist, cifar10}.py
 ```
 
-4. Build Piranha at a specific fixed point precision and for a particular protocol. 3-party replicated secret sharing is the default and doesn't require a command-line flag.
+#### Build Piranha 
+We can build Piranha at a specific fixed point precision and for a particular protocol. 3-party replicated secret sharing is the default and doesn't require a command-line flag.
 
 ```
 make -j8 PIRANHA_FLAGS="-DFLOAT_PRECISION=<NBITS> -D{TWOPC,FOURPC}"
+```
+
+Example
+
+```
+make -j PIRANHA_FLAGS="-DTWOPC"
 ```
 
 ## Run
@@ -108,6 +111,18 @@ You may want to run Piranha on a local machine for development. An example confi
 
 Start the computation with:
 
+```
+./piranha -p 0 -c files/samples/localhost_config.json "--gtest_filter=EvalTest*2PC*" >/dev/null 2>&1 &
+```
+This will launch piranha in release mode, spin up party 0 on a single GPU, runs the EvalTest and pushes the process into the background.
+
+```
+./piranha -p 1 -c files/samples/localhost_config.json "--gtest_filter=EvalTest*2PC*"
+```
+
+**Note**: In order to run the simulation in debug mode replace `./piranha` with `./piranha-debug`
+
+A run script can also be created to run these commands. Example
 ```
 ./files/samples/localhost_runner.sh
 ```
