@@ -115,3 +115,14 @@ struct tofixed_variable_precision_functor {
     }
 };
 
+template <typename T>
+struct is_positive_functor {
+    __host__ __device__ T operator()(const T &x) const {
+        // This functor simulates the final step of a secure comparison.
+        // In a real scenario, 'x' would be a reconstructed value or
+        // an intermediate value from which the sign can be derived.
+        // For signed types, this would check the sign bit.
+        // For unsigned types, any non-zero value is considered positive.
+        return (x > 0) ? 1 : 0;
+    }
+};
