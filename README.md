@@ -17,7 +17,19 @@ Piranha is described in more detail in our [USENIX Security '22 paper](https://e
 
 **Warning**: This is an academic proof-of-concept prototype and has not received careful code review. This implementation is NOT ready for production use.
 
-## Build
+#### Setup the `env` variables
+
+The following things needs to be setup 
+- paths for the Google Test libraries and headers
+- GCC 12.2.0
+- CUDA 12.3
+- CMake 3.9
+
+The follwing command will take care of these things
+```
+source ./scripts/piranha_setup.sh
+```
+#### Build CUTLASS
 
 This project requires an NVIDIA GPU, and assumes you have your GPU drivers and the [NVIDIA CUDA Toolkit](https://docs.nvidia.com/cuda/) already installed. The following has been tested on AWS with the `Deep Learning Base AMI (Ubuntu 18.04 ) Version 53.5` AMI.
 
@@ -26,34 +38,47 @@ This project requires an NVIDIA GPU, and assumes you have your GPU drivers and t
 git submodule update --init --recursive
 ```
 
-1. Build CUTLASS
+2. Build CUTLASS
+
+Refer this [NVIDIA CUTLASS Documentation - Building for multipe Architectures](https://docs.nvidia.com/cutlass/media/docs/cpp/quickstart.html#building-for-multiple-architectures) for the GPU attached.
+
+
 
 ```
 cd ext/cutlass
-mkdir build
+mkdir build; cd build
 cmake .. -DCUTLASS_NVCC_ARCHS=<YOUR_GPU_ARCH_HERE> -DCMAKE_CUDA_COMPILER_WORKS=1 -DCMAKE_CUDA_COMPILER=<YOUR NVCC PATH HERE>
+```
+
+For buttonbox -> we have the GeForce GTX TITAN X with the following specs
+- Maxwell 2.0 Architecture
+- DirectX 12 (12_1)
+- OpenGL 4.6
+- OpenCL 3.0
+- Vulkan 1.4
+- CUDA 5.2
+- Shader Model 6.8
+
+Hence, we have to use
+
+```
+cmake .. -DCUTLASS_NVCC_ARCHS="50;53" -DCMAKE_CUDA_COMPILER_WORKS=1 -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.3/bin/nvcc
+```
+
+Once the build files are written successfully, we can build the cutlass library 
+
+```
 make -j
 ```
 
-1. Install GTest. We use it for unit testing.
-
-```
-sudo apt install libgtest-dev libssl-dev
-cd /usr/src/gtest
-sudo mkdir build
-cd build
-sudo cmake ..
-sudo make
-sudo make install
-```
-
-2. Create some necessary directories
+#### Download Datasets (optional)
+1. Create some necessary directories
 
 ```
 mkdir output; mkdir files/MNIST; mkdir files/CIFAR10
 ```
 
-3. Download the MNIST/CIFAR10 datasets, if using. This step might take a while
+2. Download the MNIST/CIFAR10 datasets, if using. This step might take a while
 
 ```
 cd scripts
@@ -61,10 +86,17 @@ sudo pip install torch torchvision
 python download_{mnist, cifar10}.py
 ```
 
-4. Build Piranha at a specific fixed point precision and for a particular protocol. 3-party replicated secret sharing is the default and doesn't require a command-line flag.
+#### Build Piranha 
+We can build Piranha at a specific fixed point precision and for a particular protocol. 3-party replicated secret sharing is the default and doesn't require a command-line flag.
 
 ```
 make -j8 PIRANHA_FLAGS="-DFLOAT_PRECISION=<NBITS> -D{TWOPC,FOURPC}"
+```
+
+Example
+
+```
+make -j PIRANHA_FLAGS="-DTWOPC"
 ```
 
 ## Run
@@ -83,6 +115,19 @@ You may want to run Piranha on a local machine for development. An example confi
 
 Start the computation with:
 
+```
+./piranha -p 0 -c config.json "--gtest_filter=EvalTest*2PC*" >/dev/null 2>&1 &
+```
+
+This will launch piranha in release mode, spin up party 0 on a single GPU, runs the EvalTest and pushes the process into the background.
+
+```
+./piranha -p 1 -c config.json "--gtest_filter=EvalTest*2PC*"
+```
+
+**Note**: In order to run the simulation in debug mode replace `./piranha` with `./piranha-debug`
+
+A run script can also be created to run these commands. Example
 ```
 ./files/samples/localhost_runner.sh
 ```
@@ -137,5 +182,4 @@ optional arguments:
 * **Very important note on timing.** Unfortunately, MPC still requires a significant amount of time (~30 hrs/training run) on a larger network like VGG16. A conservative estimate is that for Figure 5 alone, > 270 computation-hours are required to replicate the full figure. We've included a `--fast` flag if you'd like to replicate every other datapoint first (will still require a number of compute-hours), then come back to the VGG-based values.
 
 * Use `--verbose` if something isn't working and you want to take a look at the raw output or need an error message. In the backend, we use Ansible to communicate with each of the machines in the cluster.
-
 

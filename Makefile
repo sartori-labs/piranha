@@ -3,12 +3,12 @@ DEBUG_BINARY=piranha-debug
 BUILD_DIR=build
 DEBUG_DIR=debug
 
-CUDA_VERSION=11.5
+CUDA_VERSION=12.3
 CUTLASS_PATH=ext/cutlass
 
-CXX=/usr/local/cuda-$(CUDA_VERSION)/bin/nvcc
-FLAGS := -Xcompiler="-O3,-w,-std=c++14,-pthread,-msse4.1,-maes,-msse2,-mpclmul,-fpermissive,-fpic,-pthread" -Xcudafe "--diag_suppress=declared_but_not_referenced"
-DEBUG_FLAGS := -Xcompiler="-O0,-g,-w,-std=c++14,-pthread,-msse4.1,-maes,-msse2,-mpclmul,-fpermissive,-fpic,-pthread" -Xcudafe "--diag_suppress=declared_but_not_referenced"
+CXX=nvcc
+FLAGS := -Xcompiler="-O3,-w,-std=c++17,-pthread,-msse4.1,-maes,-msse2,-mpclmul,-fpermissive,-fpic,-pthread" -Xcudafe "--diag_suppress=declared_but_not_referenced"
+DEBUG_FLAGS := -Xcompiler="-O0,-g,-w,-std=c++17,-pthread,-msse4.1,-maes,-msse2,-mpclmul,-fpermissive,-fpic,-pthread" -Xcudafe "--diag_suppress=declared_but_not_referenced"
 
 PIRANHA_FLAGS :=
 
@@ -22,16 +22,16 @@ DEBUG_OBJ_FILES   += $(addprefix $(DEBUG_DIR)/, $(notdir $(SRC_CU_FILES:.cu=.o))
 HEADER_FILES      := $(wildcard src/*.h src/**/*.h src/*.cuh src/**/*.cuh src/*.inl src/**/*.inl)
 
 LIBS := -lcrypto -lssl -lcudart -lcuda -lgtest -lcublas
-OBJ_INCLUDES := -I '/usr/local/cuda-$(CUDA_VERSION)/include' -I '$(CUTLASS_PATH)/include' -I '$(CUTLASS_PATH)/tools/util/include' -I 'include'
-INCLUDES := $(OBJ_INCLUDES), -L./ -L/usr/local/cuda-$(CUDA_VERSION)/lib64 -L$(CUTLASS_PATH)/build/tools/library
+OBJ_INCLUDES := -I '/usr/local/cuda-$(CUDA_VERSION)/include' -I '$(CUTLASS_PATH)/include' -I '$(CUTLASS_PATH)/tools/util/include' -I 'include' -I '$(GOOGLETEST)/include'
+INCLUDES := $(OBJ_INCLUDES), -L./ -L/usr/local/cuda-$(CUDA_VERSION)/lib64 -L$(CUTLASS_PATH)/build/tools/library -L$(GOOGLETEST)/lib64
 
-TEST :=
+TEST := EvalTest.*
 
 ################################# OPTIONS ###############################################
 CONFIG_FILE := config.json
 #########################################################################################
 
-all: $(BINARY)
+all: $(BINARY) $(DEBUG_BINARY)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -58,21 +58,21 @@ $(DEBUG_DIR)/%.o: %.cu $(HEADER_FILES)
 	$(CXX) -dc $(DEBUG_FLAGS) -Xcompiler="$(PIRANHA_FLAGS)" -c $< -o $@ $(OBJ_INCLUDES)
 
 clean:
-	rm -rf $(BINARY)
+	rm -rf $(BINARY) $(DEBUG_BINARY)
 	rm -rf $(BUILD_DIR)
 	rm -rf $(DEBUG_DIR)
 
 ################################# Remote runs ##########################################
 
 run: $(BINARY)
-	#@./$(BINARY) 3 files/IP_$(RUN_TYPE) files/keys/key3 $(NETWORK) $(LR_FILE) $(SEED) $(RUN_NAME) $(PRELOAD) --gtest_filter=$(TEST) >/dev/null 2>&1 &
-	#@./$(BINARY) 2 files/IP_$(RUN_TYPE) files/keys/key2 $(NETWORK) $(LR_FILE) $(SEED) $(RUN_NAME) $(PRELOAD) --gtest_filter=$(TEST) >/dev/null 2>&1 &
-	#@./$(BINARY) 1 files/IP_$(RUN_TYPE) files/keys/key1 $(NETWORK) $(LR_FILE) $(SEED) $(RUN_NAME) $(PRELOAD) --gtest_filter=$(TEST) >/dev/null 2>&1 &
-	#@./$(BINARY) 0 files/IP_$(RUN_TYPE) files/keys/key0 $(NETWORK) $(LR_FILE) $(SEED) $(RUN_NAME) $(PRELOAD) --gtest_filter=$(TEST)
-	@./$(BINARY) 3 $(CONFIG_FILE) --gtest_filter=$(TEST) >/dev/null 2>&1 &
-	@./$(BINARY) 2 $(CONFIG_FILE) --gtest_filter=$(TEST) >/dev/null 2>&1 &
-	@./$(BINARY) 1 $(CONFIG_FILE) --gtest_filter=$(TEST) >/dev/null 2>&1 &
-	@./$(BINARY) 0 $(CONFIG_FILE) --gtest_filter=$(TEST)
+# 	#@./$(BINARY) 3 files/IP_$(RUN_TYPE) files/keys/key3 $(NETWORK) $(LR_FILE) $(SEED) $(RUN_NAME) $(PRELOAD) --gtest_filter=$(TEST) >/dev/null 2>&1 &
+# 	#@./$(BINARY) 2 files/IP_$(RUN_TYPE) files/keys/key2 $(NETWORK) $(LR_FILE) $(SEED) $(RUN_NAME) $(PRELOAD) --gtest_filter=$(TEST) >/dev/null 2>&1 &
+# 	#@./$(BINARY) 1 files/IP_$(RUN_TYPE) files/keys/key1 $(NETWORK) $(LR_FILE) $(SEED) $(RUN_NAME) $(PRELOAD) --gtest_filter=$(TEST) >/dev/null 2>&1 &
+# 	#@./$(BINARY) 0 files/IP_$(RUN_TYPE) files/keys/key0 $(NETWORK) $(LR_FILE) $(SEED) $(RUN_NAME) $(PRELOAD) --gtest_filter=$(TEST)
+# 	@./$(BINARY) 3 $(CONFIG_FILE) --gtest_filter=$(TEST) >/dev/null 2>&1 &
+# 	@./$(BINARY) 2 $(CONFIG_FILE) --gtest_filter=$(TEST) >/dev/null 2>&1 &
+# 	@./$(BINARY) 1 $(CONFIG_FILE) --gtest_filter=$(TEST) >/dev/null 2>&1 &
+	@CUDA_VISIBLE_DEVICES=0 ./$(BINARY) -p 0 -c $(CONFIG_FILE) --gtest_filter=$(TEST)
 	@echo "Execution completed"
 
 gdb: $(DEBUG_BINARY)
@@ -150,5 +150,3 @@ two: $(BINARY)
 three: $(BINARY)
 	#@./$(BINARY) 3 files/IP_$(RUN_TYPE) files/keys/key3 $(NETWORK) $(LR_FILE) $(SEED) $(RUN_NAME) $(PRELOAD) --gtest_filter=$(TEST)
 	@./$(BINARY) 3 $(CONFIG_FILE) --gtest_filter=$(TEST)
-
-
